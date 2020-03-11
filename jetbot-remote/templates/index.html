@@ -1,0 +1,133 @@
+<html>
+  <head>
+    <title>Stream</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=EB+Garamond&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Cuprum&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.1/js/tempusdominus-bootstrap-4.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.1/css/tempusdominus-bootstrap-4.min.css" />
+  </head>
+  <body style="background-color:#000000;">
+    
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-3">
+            <button type="button" class="btn btn-danger" id="stop_button">STOP!</button>
+        </div>
+        <div class="col-sm-3">
+            <button type="button" class="btn btn-success" id="light_button">Light</button>
+        </div>
+        <div class="col-sm-3">
+            <div id="debug">Debug...</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+            <img src="{{ url_for('video_image') }}">
+        </div>
+      </div>
+    </div>
+      
+
+    <script>
+
+      var start;
+      var axis_values = [0.0, 0.0, 0.0, 0.0];
+      var button_values = [false, false, false, false, false, false, false, false];
+
+      function game_loop() {
+        var debug_div = document.getElementById("debug");
+
+        var gamepads = navigator.getGamepads();
+        if (!gamepads) {
+          start = requestAnimationFrame(game_loop);
+          debug_div.innerHTML = "Gamepad functionality not available.";
+          return;
+        }
+
+        var gamepad = gamepads[0];
+        if (typeof gamepad !== 'undefined') {
+
+          var text = ""
+
+          // Handle axes.
+          var axis_values_changed = false
+          for (i = 0; i < gamepad.axes.length; i++) {
+            if (axis_values[i] != gamepad.axes[i]) {
+              axis_values_changed = true
+              axis_values[i] = gamepad.axes[i];
+            }
+          }
+          if (axis_values_changed == true) {
+            $.post("/set_axis_values", { data: axis_values });
+            console.log(axis_values)
+          }
+            
+          // Handle buttons.
+          var button_values_changed = false
+          for (i = 0; i < gamepad.buttons.length; i++) {
+            if (button_values[i] != gamepad.buttons[i].pressed) {
+              button_values_changed = true
+              button_values[i] = gamepad.buttons[i].pressed;
+            }
+          }
+          if (button_values_changed == true) {
+            $.post("/set_button_values", { data: button_values });
+          }
+
+          text += axis_values + "<br>";
+          text += button_values + "<br>";
+
+          debug_div.innerHTML = text
+
+        }
+        else {
+          debug_div.innerHTML = "No gamepad found.";
+        }
+
+        start = requestAnimationFrame(game_loop);
+      }
+
+      // Run after page load.
+      addEventListener("DOMContentLoaded", function() {
+
+        console.log("CONTENT LOADED")
+
+        // STOP
+        $("#stop_button").click(function(){
+            $.post("/stop");
+        });
+          
+        // STOP
+        $("#light_button").click(function(){
+            $.post("/light");
+        });
+
+        //$("#set_alarm_button").click(function(){
+        //    $.post( "/set_alarm", { time: $("#datetimepicker3").data("date") } );
+        //});
+
+        window.addEventListener("gamepadconnected", function(e) {
+          console.log("Gamepad connected", e.gamepad);
+        });
+
+        window.addEventListener("gamepaddisconnected", function(e) {
+          console.log("Gamepad disconnected", e.gamepad);
+        });
+
+        game_loop()
+
+      }, true);
+
+
+    </script>
+
+
+
+  </body>
+</html>
+
